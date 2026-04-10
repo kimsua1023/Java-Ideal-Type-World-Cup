@@ -1,1 +1,268 @@
+	package JavaProject;
 
+	import javax.swing.*;
+	import java.awt.*;
+	import java.util.ArrayList;
+	import java.util.Collections;
+	import java.util.Map;
+	import java.util.HashMap;
+	import java.util.List; 
+	public class GameClass {
+	    private ArrayList<ImageIcon> images;
+	    private int roundCount;
+	    private Timer timer;
+	    private int secondsElapsed;
+	    private StartClass startClassFrame;  // Reference to Startclass for data access
+	    private JLabel timerLabel;          // Timer label for TopPanel
+	    private JLabel roundLabel;          // Round label for TopPanel
+	    private JFrame currentFrame;        // Reference to current matchup frame
+	    private Map<ImageIcon, Integer> statsMap; // Stores the count of selections for each image
+
+	    // Constructor now accepts Startclass
+	    public GameClass(StartClass startClassFrame) {
+	        this.startClassFrame = startClassFrame;
+	        this.roundCount = getRoundCountFromStartClass(); // Get round count from Startclass
+	        
+	        loadImages(roundCount);
+	        secondsElapsed = 0;
+	        timer = new Timer(1000, e -> updateTimer()); // Timer updated every second
+
+	        // Initialize stats map
+	        statsMap = new HashMap<>();
+	        for (ImageIcon image : images) {
+	            statsMap.put(image, 0);
+	        }
+	    }
+
+	    // Get round count based on the selected item in the ComboBox
+	    private int getRoundCountFromStartClass() {
+	        String selectedRound = (String) startClassFrame.getRoundComboBox().getSelectedItem();
+	        switch (selectedRound) {
+	            case "16  ":
+	                return 16;
+	            case "8  ":
+	                return 8;
+	            case "4  ":
+	                return 4;
+	            default:
+	                return 16;  // Default to 16 if no valid option
+	        }
+	    }
+
+	    // Load images and shuffle them based on round count
+	    private void loadImages(int value) {
+	        images = new ArrayList<>();
+	        ArrayList<String> imagePaths = new ArrayList<>();
+	        for (int i = 1; i <= 16; i++) {
+	            imagePaths.add("image/president" + i + ".jpg");
+	        }
+	        for (int i = 0; i < value && i < imagePaths.size(); i++) {
+	            images.add(new ImageIcon(imagePaths.get(i)));
+	        }
+	        Collections.shuffle(images);
+	    }
+
+	    // Start the game and first matchup
+	    public void start() {
+	        System.out.println("Starting the World Cup for " + roundCount + " round.");
+	        timer.setInitialDelay(0);
+	        timer.start();  // Start the timer when the game begins
+	        runNextMatchup();
+	    }
+
+	    // Run the next matchup
+	    private void runNextMatchup() {
+	        if (images.size() == 1) {
+	            showWinner(images.get(0));
+	        } else {
+	            ImageIcon img1 = images.remove(0);
+	            ImageIcon img2 = images.remove(0);
+	            showMatchup(img1, img2);
+	        }
+	    }
+
+	    // Show the matchup UI
+	    private void showMatchup(ImageIcon img1, ImageIcon img2) {
+	        currentFrame = createMatchupFrame();
+	        updateTopPanel(currentFrame); // Update the top panel with the timer
+	        addMatchupButtons(currentFrame, img1, img2);
+	        currentFrame.setVisible(true);
+	    }
+
+	    // Create a matchup frame
+	    private JFrame createMatchupFrame() {
+	        JFrame frame = new JFrame("World Cup Matchup");
+	        frame.setSize(1600, 800);
+	        frame.setLocationRelativeTo(null);
+	        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+	        frame.setLayout(new BorderLayout());
+	        return frame;
+	    }
+
+	    // Update the top panel with round info and timer
+	    private void updateTopPanel(JFrame frame) {
+	        JPanel topPanel = new JPanel(new BorderLayout());
+
+	        roundLabel = new JLabel("         : " + roundCount + "  ");
+	        topPanel.add(roundLabel, BorderLayout.WEST);
+
+	        // Timer label
+	        timerLabel = new JLabel(" ÷     ð : " + secondsElapsed + "  ");
+	        JPanel timerPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+	        timerPanel.add(timerLabel);
+	        topPanel.add(timerPanel, BorderLayout.EAST);
+
+	        frame.add(topPanel, BorderLayout.NORTH);
+	    }
+
+	    // Timer update method to refresh timer label
+	    private void updateTimer() {
+	        secondsElapsed++;
+	        if (timerLabel != null) {
+	            timerLabel.setText(" ÷     ð : " + secondsElapsed + "  ");
+	        }
+	    }
+
+	    // Add buttons for the two images in the matchup
+	    private void addMatchupButtons(JFrame frame, ImageIcon img1, ImageIcon img2) {
+	        JPanel buttonPanel = new JPanel(new GridLayout(1, 2));
+	        buttonPanel.add(createImageButton(frame, img1));
+	        buttonPanel.add(createImageButton(frame, img2));
+	        frame.add(buttonPanel, BorderLayout.CENTER);
+	    }
+
+	    // Create a button for an image
+	    private JButton createImageButton(JFrame frame, ImageIcon img) {
+	        JButton imgButton = new JButton(img);
+	        imgButton.addActionListener(e -> {
+	            images.add(img);
+
+	            // Update statsMap
+	            statsMap.put(img, statsMap.getOrDefault(img, 0) + 1);
+
+	            frame.dispose();
+	            checkNextRound();
+	        });
+	        return imgButton;
+	    }
+
+	    // Check if the next round should proceed
+	    private void checkNextRound() {
+	        if (images.size() == roundCount / 2) {
+	            roundCount /= 2;
+	            Collections.shuffle(images);
+	        }
+	        runNextMatchup();
+	    }
+
+	    // Display the winner
+	    private void showWinner(ImageIcon winnerImage) {
+	        // Stop the timer
+	        timer.stop();
+
+	        // Create the winner screen
+	        JFrame winnerFrame = createWinnerFrame();
+
+	        // Prepare total game time and display the winner info
+	        String totalTime = "    ÷     ð : " + secondsElapsed + "   ";
+	        displayWinnerInfo(winnerFrame, winnerImage, totalTime);
+
+	        // Add buttons for actions (Restart, Exit, View Stats)
+	        addWinnerButtons(winnerFrame);
+
+	        // Show the winner screen
+	        winnerFrame.setVisible(true);
+	    }
+
+	    // Create a winner screen
+	    private JFrame createWinnerFrame() {
+	        JFrame winnerFrame = new JFrame("Winner");
+	        winnerFrame.setSize(800, 900);
+	        winnerFrame.setLocationRelativeTo(null);
+	        winnerFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+	        winnerFrame.setLayout(new BorderLayout());
+	        return winnerFrame;
+	    }
+
+	    // Display winner info and the total time played
+	    private void displayWinnerInfo(JFrame winnerFrame, ImageIcon winnerImage, String totalTime) {
+	        JPanel winnerPanel = new JPanel();
+	        winnerPanel.setLayout(new BorderLayout());
+
+	        JLabel winnerLabel = new JLabel("     : ");
+	        winnerLabel.setFont(new Font("        ", Font.PLAIN, 24));
+	        winnerPanel.add(winnerLabel, BorderLayout.NORTH);
+
+	        JLabel totalTimeLabel = new JLabel(totalTime);
+	        winnerPanel.add(totalTimeLabel, BorderLayout.SOUTH);
+
+	        winnerFrame.add(winnerPanel, BorderLayout.CENTER);
+	        winnerPanel.add(new JLabel(winnerImage));  // Show winner image
+	    }
+
+	    // Add buttons for actions (Restart, Exit, Stats)
+	    private void addWinnerButtons(JFrame winnerFrame) {
+	        JPanel buttonPanel = new JPanel();
+	        JButton restartButton = new JButton("Restart");
+	        restartButton.addActionListener(e -> {
+	            winnerFrame.dispose();
+	            startClassFrame.setVisible(true);  // Reuse the existing Startclass instance for restarting
+	        });
+
+	        JButton statsButton = new JButton("View Stats");
+	        statsButton.addActionListener(e -> showStatsFrame());
+
+	        JButton exitButton = new JButton("Exit");
+	        exitButton.addActionListener(e -> System.exit(0));
+
+	        buttonPanel.add(restartButton);
+	        buttonPanel.add(statsButton);
+	        buttonPanel.add(exitButton);
+
+	        winnerFrame.add(buttonPanel, BorderLayout.SOUTH);
+	    }
+
+	    // Show stats frame
+	    private void showStatsFrame() {
+	        // Create the stats frame
+	        JFrame statsFrame = new JFrame("Statistics");
+	        statsFrame.setSize(1000, 1000);
+	        statsFrame.setLocationRelativeTo(null);
+	        statsFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+	        statsFrame.setLayout(new BorderLayout());
+
+	        // Create a panel for the stats
+	        JPanel statsPanel = new JPanel();
+	        statsPanel.setLayout(new GridLayout(0, 2)); // Two columns: image and count
+
+	        // Sort the stats by count in descending order
+	        List<Map.Entry<ImageIcon, Integer>> statsList = new ArrayList<>(statsMap.entrySet());
+	        statsList.sort((a, b) -> b.getValue().compareTo(a.getValue()));  // Sort by votes
+
+	        // Add stats to the panel
+	        for (Map.Entry<ImageIcon, Integer> entry : statsList) {
+	            JLabel imageLabel = new JLabel();
+	            imageLabel.setIcon(entry.getKey());  // Set the image icon for the JLabel
+
+	            JLabel countLabel = new JLabel(entry.getValue() + " votes");  // Add the count
+	            countLabel.setFont(new Font("Arial", Font.BOLD, 30));;
+
+	            // Add both the image and the count to the panel
+	            statsPanel.add(imageLabel);
+	            statsPanel.add(countLabel);
+	        }
+
+	        // Add the stats panel to the frame
+	        statsFrame.add(new JScrollPane(statsPanel), BorderLayout.CENTER);
+
+	        // Add a close button
+	        JButton closeButton = new JButton("Close");
+	        closeButton.addActionListener(e -> statsFrame.dispose());
+	        statsFrame.add(closeButton, BorderLayout.SOUTH);
+
+	        // Show the stats frame
+	        statsFrame.setVisible(true);
+	    }
+
+
+	}
