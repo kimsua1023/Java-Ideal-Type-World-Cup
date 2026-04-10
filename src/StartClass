@@ -1,0 +1,209 @@
+package JavaProject;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
+
+@SuppressWarnings("serial")
+public class StartClass extends JFrame {
+    private JComboBox<String> roundComboBox; // 라운드 선택 콤보박스
+    private JButton startButton; // 게임 시작 버튼
+    private Timer gameTimer; // 게임 타이머
+    private int elapsedTime = 0; // 경과 시간 변수
+    private JLabel timerLabel; 
+    
+    public StartClass() {
+        setTitle("Ideal Type World Cup");
+        setSize(800, 800);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
+        timerLabel = new JLabel("플레이 시간: 0초");
+
+        
+        // 배경 패널 설정
+        JPanel backgroundPanel = createBackgroundPanel();
+
+        // 사용자 입력 패널 생성 및 배치
+        JPanel userInputPanel = createUserInputPanel();
+        backgroundPanel.add(userInputPanel);
+        add(backgroundPanel);
+    }
+    public JLabel getTimerLabel() {
+        return timerLabel;
+    }
+
+    private String[] imagePaths = {
+    		"image/president1.jpg",
+    		"image/president2.jpg",
+    		"image/president3.jpg",
+    		"image/president4.jpg",
+    		"image/president5.jpg",
+    		"image/president6.jpg",
+    		"image/president7.jpg",
+    		"image/president8.jpg",
+    		"image/president9.jpg",
+    		"image/president10.jpg",
+    		"image/president11.jpg",
+    		"image/president12.jpg",
+    		"image/president13.jpg",
+    		"image/president14.jpg",
+    		"image/president15.jpg",
+    		"image/president16.jpg",
+    };
+    private int currentImageIndex = 0;
+    private Timer backgroundTimer;
+
+    // 배경 패널 생성 메소드
+    private JPanel createBackgroundPanel() {
+        JPanel backgroundPanel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                // 현재 이미지 가져오기
+                ImageIcon background = new ImageIcon(imagePaths[currentImageIndex]);
+                if (background.getImageLoadStatus() == MediaTracker.COMPLETE) {
+                    g.drawImage(background.getImage(), 0, 0, getWidth(), getHeight(), this);
+                } else {
+                    System.out.println("Image failed to load.");
+                }
+            }
+        };
+        startBackgroundTimer(backgroundPanel); // 타이머 시작
+        return backgroundPanel;
+    }
+
+    private void startBackgroundTimer(JPanel backgroundPanel) {
+        backgroundTimer = new Timer(2000, new ActionListener() { // 2초 간격
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                currentImageIndex = (currentImageIndex + 1) % imagePaths.length; // 다음 이미지로 변경
+                backgroundPanel.repaint(); // 패널 다시 그리기
+            }
+        });
+        backgroundTimer.start();
+    }
+
+    private void startTypingAnimation(JLabel titleLabel) { //글자이벤트
+        String text = "교수님이상형월드컵";
+        Timer typingTimer = new Timer(150, new ActionListener() {
+            int index = 0;
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (index < text.length()) {
+                    titleLabel.setText(titleLabel.getText() + text.charAt(index));
+                    index++;
+                } else {
+                    ((Timer)e.getSource()).stop();
+                }
+            }
+        });
+        typingTimer.start();
+    }
+
+    @Override
+    public void dispose() {
+        if (backgroundTimer != null) {
+            backgroundTimer.stop();
+        }
+        super.dispose();
+    }
+
+    // 사용자 입력 패널 생성 메소드
+    private JPanel createUserInputPanel() {
+        JPanel panel = new JPanel();
+        panel.setLayout(new GridBagLayout());
+        panel.setPreferredSize(new Dimension(800, 600));
+        panel.setOpaque(true);
+        panel.setBackground(new Color(255, 255, 255, 200)); // 배경에 약간의 투명도 추가
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.HORIZONTAL; // 요소가 가로로 확장되게 설정
+
+        JLabel titleLabel = new JLabel("", SwingConstants.CENTER);
+        titleLabel.setFont(new Font("맑은 고딕", Font.BOLD, 48)); 
+        titleLabel.setForeground(new Color(0, 0, 0)); // 제목 텍스트 색상
+        titleLabel.setOpaque(false);
+        gbc.gridx = 0; 
+        gbc.gridy = 0;
+        gbc.gridwidth = 2; 
+        gbc.insets = new Insets(20, 0, 20, 0); 
+        panel.add(titleLabel, gbc);
+
+        startTypingAnimation(titleLabel);
+
+        JLabel roundLabel = new JLabel("Select Rounds: ");
+        roundLabel.setFont(new Font("맑은 고딕", Font.PLAIN, 18));
+        gbc.gridx = 0; 
+        gbc.gridy = 1;
+        gbc.gridwidth = 1; 
+        gbc.insets = new Insets(10, 0, 10, 0); 
+        panel.add(roundLabel, gbc);
+
+        String[] rounds = {"16강", "8강", "4강"};
+        roundComboBox = new JComboBox<>(rounds);
+        roundComboBox.setFont(new Font("맑은 고딕", Font.PLAIN, 18));
+        gbc.gridx = 1; 
+        gbc.gridy = 1;
+        panel.add(roundComboBox, gbc);
+
+        startButton = new JButton("Start");
+        startButton.setFont(new Font("맑은 고딕", Font.BOLD, 20));
+        startButton.setPreferredSize(new Dimension(100, 50)); 
+        startButton.setBackground(new Color(0, 102, 204)); 
+        startButton.setForeground(Color.WHITE); 
+        gbc.gridx = 1; 
+        gbc.gridy = 2;
+        gbc.insets = new Insets(20, 0, 20, 0); 
+        gbc.anchor = GridBagConstraints.CENTER; 
+        panel.add(startButton, gbc);
+
+        startButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                startGameTimer(); 
+                //String selectedRound = (String) roundComboBox.getSelectedItem();
+                GameClass game = new GameClass(StartClass.this); // MainFrame을 전달
+                game.start();
+                dispose(); // 현재 창 닫기
+            }
+        });
+
+        return panel;
+    }
+
+    // 게임 타이머 시작 메소드
+    public void startGameTimer() {
+        elapsedTime = 0;
+        gameTimer = new Timer(1000, new ActionListener() { 
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                elapsedTime++;
+            }
+        });
+        gameTimer.start(); 
+    }
+
+    // 게임 타이머 정지 메소드
+    public int stopGameTimer() {
+        if (gameTimer != null) {
+            gameTimer.stop();
+        }
+        return elapsedTime; 
+    }
+
+    // 메인 메소드 - 프로그램 시작 지점
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+        	StartClass mainFrame = new StartClass();
+            mainFrame.setVisible(true); 
+        });
+    }
+
+    // Add the getter method for roundComboBox
+    public JComboBox<String> getRoundComboBox() {
+        return roundComboBox;
+    }
+}
